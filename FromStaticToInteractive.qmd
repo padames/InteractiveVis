@@ -1,0 +1,89 @@
+---
+title: "The observable plot example"
+author: "Norah Jones- Modified by Pablo Adames"
+format: 
+  html: 
+    code-fold: true
+---
+
+## Motivation
+
+When an interactive visualization is the goal, the recent observable plot module is pretty convenient. 
+
+The data can be obtained up to date from https://www.ncdc.noaa.gov/cdo-web/search for the Seattle-Tacoma international airport weather station dating back to 1941.
+
+## Some data cleaning
+
+```{r data-cleaning, echo=TRUE}
+raw_data <- read.csv("data/3868957.csv", header=TRUE, stringsAsFactors=FALSE) 
+df <- data.frame( dates=as.Date(raw_data$DATE, format = "%Y-%m-%d"))
+df["precipitation"] <- raw_data$PRCP
+df$STATION <- raw_data$STATION
+df$NAME <- raw_data$NAME
+head(df)
+write.csv(df, "data/seatle-data.csv", row.names = FALSE)
+```
+
+
+## Seattle Precipitation by Day (2012 to 2023)
+
+Now we  can create the interactive visualization to investigate how net precipitation has evolved over the past 11 years at the Seattle-Tacoma International airport weather station.
+
+
+```{ojs}
+precipitations = FileAttachment("data/seatle-data.csv")
+  .csv({typed: true})
+
+//create views
+viewof beginYear = Inputs.range(
+  [2012, 2023], 
+  {value: 2012, step: 1, label: "Begin year:"}
+)
+viewof endYear  = Inputs.range(
+  [beginYear, 2023], 
+  { value: [beginYear], 
+    step: 1, label: "End year:"
+  }
+)
+viewof stat = Inputs.radio(
+  ["mean", "max", "min"], 
+  { value: "mean", 
+    label: "Statistic:"
+  }
+)
+
+//filter the data read from file
+filtered = precipitations.filter(function(precipitations) {
+  let years = new Date(precipitations.dates).getYear() + 1900;
+  return  (years >= beginYear) && (years <= endYear)
+})
+
+// use the filtered data  
+Plot.plot({
+  width: 800, height: 500, padding: 0,
+  color: { scheme: "blues", type: "sqrt"},
+  y: { tickFormat: i => "JFMAMJJASOND"[i] },
+  marks: [
+    Plot.cell(filtered, Plot.group({fill: stat}, {
+      x: d => new Date(d.dates).getDate(),
+      y: d => new Date(d.dates).getMonth(),
+      fill: "precipitation", 
+      inset: 0.5
+    }))
+  ]
+})
+```
+
+------------------------------------------------------------------------
+
+## Improvements
+
+The numerical result of the statistical functions is mapped to the intensity of the blue colour. However the range of the colour is dependent on the years we are filtering by.
+
+To make this dimension more useful to discover real trends  in precipitation over the years, let's normalize the precipitation for the whole data set.
+
+
+```{r normalizing-precipitation, echo=TRUE}
+
+```
+
