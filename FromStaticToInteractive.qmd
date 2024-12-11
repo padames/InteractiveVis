@@ -1,14 +1,14 @@
 ---
 title: "The observable plot example"
 author: "Norah Jones- Modified by Pablo Adames"
-format: 
-  html: 
+format:
+  html:
     code-fold: true
 ---
 
 ## Motivation
 
-When an interactive visualization is the goal, the recent observable plot module is pretty convenient. 
+When an interactive visualization is the goal, the recent observable plot module is pretty convenient.
 
 The data can be obtained up to date from https://www.ncdc.noaa.gov/cdo-web/search for the Seattle-Tacoma international airport weather station dating back to 1941.
 
@@ -20,15 +20,13 @@ df <- data.frame( dates=as.Date(raw_data$DATE, format = "%Y-%m-%d"))
 df["precipitation"] <- raw_data$PRCP
 df$STATION <- raw_data$STATION
 df$NAME <- raw_data$NAME
-head(df)
+head(df$precipitation)
 write.csv(df, "data/seatle-data.csv", row.names = FALSE)
 ```
 
-
 ## Seattle Precipitation by Day (2012 to 2023)
 
-Now we  can create the interactive visualization to investigate how net precipitation has evolved over the past 11 years at the Seattle-Tacoma International airport weather station.
-
+Now we can create the interactive visualization to investigate how net precipitation has evolved over the past 11 years at the Seattle-Tacoma International airport weather station.
 
 ```{ojs}
 precipitations = FileAttachment("data/seatle-data.csv")
@@ -80,10 +78,75 @@ Plot.plot({
 
 The numerical result of the statistical functions is mapped to the intensity of the blue colour. However the range of the colour is dependent on the years we are filtering by.
 
-To make this dimension more useful to discover real trends  in precipitation over the years, let's normalize the precipitation for the whole data set.
+To make this dimension more useful to discover real trends in precipitation over the years, let's transform the precipitation using the Z-score standarization for the whole data set.
+We center the data using the mean and normalize using the standard deviation.
 
+\begin{eqnarray*} p_z   &=& \frac{p - \mu_p}{\sigma_p}\\ \end{eqnarray*}
 
 ```{r normalizing-precipitation, echo=TRUE}
-
+df$precipitation_std <- (df$precipitation - mean(df$precipitation, na.rm = TRUE))/sd(df$precipitation, na.rm = TRUE)
+head(df$precipitation_std)
+write.csv(df, "data/seatle-data-std.csv", row.names = FALSE)
 ```
+
+
+
+
+
+```{ojs}
+precipitations_std = FileAttachment("data/seatle-data-std.csv")
+  .csv({typed: true})
+
+//create views
+viewof beginYear_std = Inputs.range(
+  [2012, 2023], 
+  {value: 2012, step: 1, label: "Begin year:"}
+)
+viewof endYear_std  = Inputs.range(
+  [beginYear, 2023], 
+  { value: [beginYear], 
+    step: 1, label: "End year:"
+  }
+)
+viewof stat_std = Inputs.radio(
+  ["mean", "max", "min"], 
+  { value: "mean", 
+    label: "Statistic:"
+  }
+)
+
+//filter the data read from file
+filtered_std = precipitations_std.filter(function(precipitations_std) {
+  let years = new Date(precipitations_std.dates).getYear() + 1900;
+  return  (years >= beginYear_std) && (years <= endYear_std)
+})
+
+// use the filtered data  
+Plot.plot({
+  width: 800, height: 500, padding: 0,
+  color: { scheme: "blues", type: "sqrt"},
+  y: { tickFormat: i => "JFMAMJJASOND"[i] },
+  marks: [
+    Plot.cell(filtered_std, Plot.group({fill: stat_std}, {
+      x: d => new Date(d.dates).getDate(),
+      y: d => new Date(d.dates).getMonth(),
+      fill: "precipitation_std", 
+      inset: 0.5
+    }))
+  ]
+})
+```
+
+
+## Conclusion
+
+The interactivity brings up questions about the data set and the operations carried out on the data to achieve the visualization itself.
+Z-score standarization was used to normalized the precipitation over th range of years of data before filtering it to investigate the effect of the passage of time.
+Min-max normalization could have been investigated as well.
+The effect of this transformation is not too dramatic but the range of time in this data set may not be sufficiently long to observe large contrast.
+
+
+Interactivity can be useful to express a time series over a complex time plane to study seasonality effects.
+
+
 
