@@ -13,7 +13,7 @@ The interactivity is provided by chunks of Javascript code for the library obser
 
 The original example this was based on appeared in https://quarto.org/ under the observable tab.
 
-![](images/Observable_example.png "Title")
+![](Observable_example.png "Title")
 
 
 It was expanded with free data downloaded from the NOAA website https://www.ncdc.noaa.gov/cdo-web/search. The data transformations are included in the code shown in the page.
